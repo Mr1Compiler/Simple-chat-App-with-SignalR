@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <!--Starting HTML-->
+
+    <h1>Welcom To Chat App</h1>
+
+    <input type="text" id="txt">
+    <button onclick="snd()" id="btnSend">Send</button>
+    <br><br><br>
+
+    <div class="col-4">
+        <span id="connectedUsers"></span>
+        <span id="msgs"></span>
+    </div>
+    <br>
+    <!--End HTML-->
+    <!--JavaScript-->
+    <script src="signalr.js"></script>
+    <script>
+
+
+        let connection = new signalR.HubConnectionBuilder()
+            .withUrl("/chat")
+            .build();
+
+        connection.start();
+
+        connection.on("ReceiveDeviceId", (deviceId) => {
+            document.getElementById("connectedUsers").innerHTML += deviceId + "<br>";
+        });
+
+        function snd() {
+            let message = document.getElementById("txt").value;
+            let userId = ""; 
+
+            connection.invoke("SendMessage", userId, message);
+
+            document.getElementById("txt").value = ""; 
+        }
+
+        // ✅ Set up the listener **only once** when the page loads
+        connection.on("SendMessage", (userId, message) => {
+            document.getElementById("msgs").innerHTML += userId + " : " + message + "<br>";
+        });
+
+
+    </script>
+
+    <!--End JavaScript-->
+</body>
+</html>
