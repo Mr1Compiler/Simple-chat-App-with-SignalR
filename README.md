@@ -18,7 +18,7 @@ This is a basic C# and .NET project that uses SignalR and JavaScript to create a
 ## Screenshots
 
 ### Login Page
-![Login Page](![Image](https://github.com/user-attachments/assets/2709b688-59ba-4b29-8e8d-a2b785ed4dfa))
+![Login Page]![Image](https://github.com/user-attachments/assets/483dc2c3-2f7a-41ae-94cb-53e43ca56769)
 
 ### Chat Page
 ![Chat Page](![Image](https://github.com/user-attachments/assets/25949dbf-5e56-4bc0-8bf4-eacbe5821e0a))
