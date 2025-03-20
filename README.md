@@ -18,9 +18,9 @@ This is a basic C# and .NET project that uses SignalR and JavaScript to create a
 ## Screenshots
 
 ### Login Page
-![Login Page]![Image](https://github.com/user-attachments/assets/483dc2c3-2f7a-41ae-94cb-53e43ca56769)
+![Image](https://github.com/user-attachments/assets/483dc2c3-2f7a-41ae-94cb-53e43ca56769)
 
 ### Chat Page
-![Chat Page]![Image](https://github.com/user-attachments/assets/cd008f09-fbc1-4079-aa52-e7b568ebcdae)
+![Image](https://github.com/user-attachments/assets/cd008f09-fbc1-4079-aa52-e7b568ebcdae)
 
 This app is a great starting point for learning how to use SignalR in C# and .NET, along with JavaScript, to build real-time applications.
