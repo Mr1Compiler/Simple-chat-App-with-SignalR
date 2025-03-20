@@ -2,55 +2,142 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Chat App - Simple Login</title>
 </head>
+<style>
+    body {
+        background-color: darkkhaki;
+    }
+</style>
 <body>
-    <!--Starting HTML-->
+    <h1>Welcome to Chat App</h1>
 
-    <h1>Welcom To Chat App</h1>
-
-    <input type="text" id="txt">
-    <button onclick="snd()" id="btnSend">Send</button>
-    <br><br><br>
-
-    <div class="col-4">
-        <span id="connectedUsers"></span>
-        <span id="msgs"></span>
+    <!-- Simple Login Form -->
+    <div id="loginForm">
+        <input type="text" id="userId" placeholder="Enter Your ID">
+        <br><br>
+        <input type="text" id="userName" placeholder="Enter Your Name">
+        <br><br>
+        <button onclick="login()">Login</button>
     </div>
-    <br>
-    <!--End HTML-->
-    <!--JavaScript-->
-    <script src="signalr.js"></script>
+
+    <!-- Chat Section (Hidden Until Logged In) -->
+    <div id="chatSection" style="display: none;">
+        <h2>Connected Users:</h2>
+        <ul id="connectedUsers"></ul>
+
+        <input type="text" id="txt" placeholder="Enter your message">
+        <br><br>
+        <input type="text" id="recId" placeholder="Enter Receiver ID">
+        <br><br>
+        <button onclick="sendToUser()">Send Message</button>
+
+        <h2>Messages:</h2>
+        <div id="msgs"></div>
+    </div>
+
+    <!-- SignalR client library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
     <script>
+        let connection;
+        const connectedUsersList = new Map();
+        let currentUserId, currentUserName;
 
+        function login() {
+            // Get user input
+            currentUserId = document.getElementById("userId").value;
+            currentUserName = document.getElementById("userName").value;
 
-        let connection = new signalR.HubConnectionBuilder()
-            .withUrl("/chat")
-            .build();
+            if (!currentUserId || !currentUserName) {
+                alert("Please enter both ID and Name!");
+                return;
+            }
 
-        connection.start();
+            // Hide login form & show chat section
+            document.getElementById("loginForm").style.display = "none";
+            document.getElementById("chatSection").style.display = "block";
 
-        connection.on("ReceiveDeviceId", (deviceId) => {
-            document.getElementById("connectedUsers").innerHTML += deviceId + "<br>";
-        });
+            // Initialize SignalR connection
+            // sendign uri components to the hub (onConnectedAsync)
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl(`/chat?userId=${encodeURIComponent(currentUserId)}&userName=${encodeURIComponent(currentUserName)}`)
+                .build();
 
-        function snd() {
-            let message = document.getElementById("txt").value;
-            let userId = ""; 
+            // Start connection and wait for it to be ready before invoking methods
+            connection.start()
+                .then(() => {
+                    console.log("Connected to SignalR hub");
 
-            connection.invoke("SendMessage", userId, message);
+                    // Register the user AFTER connection is fully established
+                    return connection.invoke("RegisterUser", currentUserId, currentUserName);
+                })
+                .catch(err => {
+                    console.error("SignalR connection error:", err.toString());
+                    alert("Failed to connect. Please refresh and try again.");
+                });
 
-            document.getElementById("txt").value = ""; 
+            // Listen for new users
+            connection.on("SendNewUserConnected", (userId, userName) => {
+                console.log("New user connected:", userId, userName);
+                addUser(userId, userName);
+            });
+
+            // Listen for messages
+            connection.on("SendToUser", (sender, receiver, message) => {
+                displayMessage(sender, receiver, message);
+            });
         }
 
-        // ✅ Set up the listener **only once** when the page loads
-        connection.on("SendMessage", (userId, message) => {
-            document.getElementById("msgs").innerHTML += userId + " : " + message + "<br>";
-        });
+        function addUser(userId, userName) {
+            if (!connectedUsersList.has(userId)) {
+                connectedUsersList.set(userId, userName);
+                updateConnectedUsersUI();
+            }
+        }
 
+        function updateConnectedUsersUI() {
+            const userListElem = document.getElementById("connectedUsers");
+            userListElem.innerHTML = "";
+            connectedUsersList.forEach((userName, userId) => {
+                const li = document.createElement("li");
+                li.textContent = `${userId} - ${userName}`;
+                userListElem.appendChild(li);
+            });
+        }
 
+        function sendToUser() {
+            const message = document.getElementById("txt").value;
+            const receiver = document.getElementById("recId").value;
+
+            if (!receiver || !message) {
+                alert("Please enter receiver ID and message!");
+                return;
+            }
+
+            connection.invoke("SendToUser", currentUserId, receiver, message)
+                .then(() => {
+                    // Display sent message in UI immediately
+                    displayMessage(currentUserId, receiver, message, true);
+                })
+                .catch(err => console.error(err.toString()));
+
+            document.getElementById("txt").value = "";
+        }
+
+        function displayMessage(sender, receiver, message, isSent = false) {
+            const msgsDiv = document.getElementById("msgs");
+            const msgElement = document.createElement("p");
+
+            if (isSent) {
+                msgElement.innerHTML = `<strong>You</strong> to <strong>${receiver}</strong>: ${message}`;
+            } else {
+                msgElement.innerHTML = `<strong>${sender}</strong> to <strong>${receiver}</strong>: ${message}`;
+            }
+
+            msgsDiv.appendChild(msgElement);
+        }
     </script>
-
-    <!--End JavaScript-->
 </body>
 </html>
+
+

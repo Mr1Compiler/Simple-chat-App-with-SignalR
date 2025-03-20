@@ -1,9 +1,10 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Microsoft.AspNetCore.SignalR;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SignalRTesting;
 public class User  
 {
-	public int Id { get; set; }
+	public string Id { get; set; }
 	[AllowNull]
-	public string Name { get; set; } 
+	public string Name { get; set; }
 }

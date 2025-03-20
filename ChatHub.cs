@@ -1,34 +1,51 @@
-﻿using Microsoft.AspNetCore.SignalR;
-namespace SignalRTesting;
+﻿using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.AspNetCore.SignalR;
 
 public class ChatHub : Hub
 {
+	private static Dictionary<string, string> connectedUsers = new();
+
 	public override async Task OnConnectedAsync()
 	{
-		HttpContext httpContext = Context.GetHttpContext()!;
-		string deviceId;
+		var httpContext = Context.GetHttpContext();
+		var userId = httpContext.Request.Query["userId"]; // Taking the userId from the url.
+		var userName = httpContext.Request.Query["userName"]; // Taking the userName
 
-		if (httpContext.Request.Cookies.TryGetValue("DeviceId", out deviceId!))
+		// Displaying all the URIs here -_-
+		var all = httpContext.Request.GetDisplayUrl(); 
+
+		if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(userName))
 		{
-			await Clients.Caller.SendAsync("ReceiveDeviceId", deviceId);
-			Console.WriteLine($"Existing Device ID: {deviceId}");
+			//			    key	   =       Value
+			connectedUsers[userId!] = Context.ConnectionId;
+			await Clients.All.SendAsync("SendNewUserConnected", userId, userName);
 		}
-		else
-		{
-			Console.WriteLine("There is an error getting the Device Id");
-		}
-		// Send the Device ID back to the client
+
 		await base.OnConnectedAsync();
 	}
 
-
-	public async Task SendMessage(string deviceId, string message)
+	public override async Task OnDisconnectedAsync(Exception? exception)
 	{
-		HttpContext httpContext = Context.GetHttpContext()!;
+		var userId = connectedUsers.FirstOrDefault(x => x.Value == Context.ConnectionId).Key;
+		if (!string.IsNullOrEmpty(userId))
+		{
+			connectedUsers.Remove(userId);
+		}
+		await base.OnDisconnectedAsync(exception);
+	}
 
-		if (httpContext.Request.Cookies.TryGetValue("DeviceId", out deviceId))
-			await Clients.All.SendAsync("SendMessage", deviceId, message);
+	public Task RegisterUser(string id, string name)
+	{
+		connectedUsers[id] = Context.ConnectionId;
+		return Clients.All.SendAsync("SendNewUserConnected", id, name);
+	}
 
+	public async Task SendToUser(string sender, string receiver, string message)
+	{
+		if (connectedUsers.TryGetValue(receiver, out var connectionId))
+		{
+			await Clients.Client(connectionId).SendAsync("SendToUser", sender, receiver, message);
+		}
 	}
 }
 
